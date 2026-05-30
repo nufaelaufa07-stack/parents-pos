@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ctot Station POS</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #22263a;
+    --border: #2e3248;
+    --accent: #f5a623;
+    --accent2: #e8823a;
+    --green: #2dd4a0;
+    --red: #f0566a;
+    --blue: #4f8ef7;
+    --text: #eef0f8;
+    --muted: #7a7f9a;
+    --radius: 14px;
+    --shadow: 0 8px 32px rgba(0,0,0,0.4);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* HEADER */
+  .header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 22px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .logo-dot { color: var(--accent); }
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .datetime {
+    font-size: 13px;
+    color: var(--muted);
+    text-align: right;
+    line-height: 1.4;
+  }
+  .datetime strong { color: var(--text); font-size: 14px; display: block; }
+
+  /* LAYOUT */
+  .layout {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    height: calc(100vh - 64px);
+  }
+
+  /* LEFT PANEL */
+  .left-panel {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-right: 1px solid var(--border);
+  }
+
+  .panel-toolbar {
+    padding: 16px 20px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    flex-wrap: wrap;
+  }
+
+  .search-wrap {
+    flex: 1;
+    min-width: 160px;
+    position: relative;
+  }
+  .search-wrap input {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 14px 10px 38px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .search-wrap input:focus { border-color: var(--accent); }
+  .search-wrap .icon {
+    position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+    color: var(--muted); font-size: 15px; pointer-events: none;
+  }
+
+  .btn {
+    padding: 10px 18px;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    transition: all 0.18s;
+    white-space: nowrap;
+  }
+  .btn:active { transform: scale(0.96); }
+  .btn-accent { background: var(--accent); color: #1a1000; }
+  .btn-accent:hover { background: var(--accent2); }
+  .btn-green { background: var(--green); color: #0a1f18; }
+  .btn-green:hover { filter: brightness(1.1); }
+  .btn-red { background: var(--red); color: #fff; }
+  .btn-red:hover { filter: brightness(1.1); }
+  .btn-ghost {
+    background: var(--surface2);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* MENU GRID */
+  .menu-grid-wrap {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+  }
+  .menu-grid-wrap::-webkit-scrollbar { width: 5px; }
+  .menu-grid-wrap::-webkit-scrollbar-thumb { background: var(--border); border-radius: 9px; }
+
+  .menu-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+    gap: 14px;
+  }
+
+  .menu-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px 14px 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-height: 110px;
+    user-select: none;
+  }
+  .menu-card:hover {
+    border-color: var(--accent);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 24px rgba(245,166,35,0.15);
+  }
+  .menu-card:active { transform: scale(0.97); }
+  .menu-card .card-name {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--text);
+    line-height: 1.3;
+  }
+  .menu-card .card-price {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--accent);
+    margin-top: auto;
+  }
+  .menu-card .card-price span { font-size: 11px; font-weight: 400; color: var(--muted); }
+  .menu-card .delete-btn {
+    position: absolute;
+    top: 8px; right: 8px;
+    width: 22px; height: 22px;
+    border-radius: 6px;
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    font-size: 13px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0;
+    transition: all 0.15s;
+  }
+  .menu-card:hover .delete-btn { opacity: 1; }
+  .menu-card .delete-btn:hover { background: var(--red); color: #fff; }
+
+  .empty-state {
+    grid-column: 1/-1;
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--muted);
+  }
+  .empty-state .big { font-size: 42px; margin-bottom: 12px; }
+  .empty-state p { font-size: 15px; }
+
+  /* RIGHT PANEL - ORDER */
+  .right-panel {
+    display: flex;
+    flex-direction: column;
+    background: var(--surface);
+    overflow: hidden;
+  }
+
+  .order-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .order-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 18px;
+  }
+  .badge {
+    background: var(--accent);
+    color: #1a1000;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 2px 10px;
+    min-width: 26px;
+    text-align: center;
+  }
+
+  .order-items {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px;
+  }
+  .order-items::-webkit-scrollbar { width: 4px; }
+  .order-items::-webkit-scrollbar-thumb { background: var(--border); border-radius: 9px; }
+
+  .order-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--muted);
+    gap: 10px;
+    font-size: 14px;
+  }
+  .order-empty .big { font-size: 36px; }
+
+  .order-item {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+    margin-bottom: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    animation: slideIn 0.2s ease;
+  }
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateX(20px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  .item-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+  .item-name {
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--text);
+    line-height: 1.3;
+    flex: 1;
+    padding-right: 8px;
+  }
+  .item-subtotal {
+    font-weight: 700;
+    color: var(--accent);
+    font-size: 15px;
+    white-space: nowrap;
+  }
+  .item-bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .item-price-each { font-size: 12px; color: var(--muted); }
+  .qty-controls {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    background: var(--bg);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    overflow: hidden;
+  }
+  .qty-btn {
+    width: 32px; height: 32px;
+    border: none;
+    background: transparent;
+    color: var(--text);
+    font-size: 16px;
+    cursor: pointer;
+    transition: background 0.15s;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700;
+  }
+  .qty-btn:hover { background: var(--border); }
+  .qty-display {
+    width: 36px;
+    text-align: center;
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--text);
+    border-left: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+    height: 32px;
+    line-height: 32px;
+    user-select: none;
+  }
+  .remove-item-btn {
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 13px;
+    padding: 4px 6px;
+    border-radius: 6px;
+    transition: all 0.15s;
+  }
+  .remove-item-btn:hover { background: var(--red); color: #fff; }
+
+  /* ORDER FOOTER */
+  .order-footer {
+    border-top: 1px solid var(--border);
+    padding: 16px 20px;
+  }
+  .total-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+  }
+  .total-label { font-size: 13px; color: var(--muted); }
+  .total-value {
+    font-family: 'Syne', sans-serif;
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--accent);
+  }
+  .total-value small { font-size: 14px; font-weight: 600; }
+  .order-actions {
+    display: flex;
+    gap: 10px;
+  }
+  .order-actions .btn { flex: 1; justify-content: center; padding: 13px 10px; font-size: 14px; }
+
+  /* MODAL */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.7);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 999;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.2s;
+    padding: 20px;
+  }
+  .modal-overlay.active { opacity: 1; pointer-events: all; }
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 28px;
+    width: 100%;
+    max-width: 380px;
+    transform: translateY(20px) scale(0.97);
+    transition: transform 0.2s;
+    box-shadow: var(--shadow);
+  }
+  .modal-overlay.active .modal { transform: translateY(0) scale(1); }
+  .modal h2 {
+    font-family: 'Syne', sans-serif;
+    font-size: 20px;
+    margin-bottom: 20px;
+  }
+  .modal label {
+    display: block;
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 6px;
+    font-weight: 500;
+  }
+  .modal input {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    outline: none;
+    margin-bottom: 16px;
+    transition: border-color 0.2s;
+  }
+  .modal input:focus { border-color: var(--accent); }
+  .modal-actions { display: flex; gap: 10px; margin-top: 4px; }
+  .modal-actions .btn { flex: 1; justify-content: center; padding: 13px; }
+
+  /* CONFIRM MODAL */
+  .confirm-modal p { color: var(--muted); margin-bottom: 20px; font-size: 15px; line-height: 1.5; }
+
+  /* RECEIPT */
+  .receipt-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.8);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 1000;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.2s;
+    padding: 20px;
+  }
+  .receipt-overlay.active { opacity: 1; pointer-events: all; }
+  .receipt-box {
+    background: #fff;
+    color: #111;
+    border-radius: 4px;
+    padding: 0;
+    width: 100%;
+    max-width: 360px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  }
+  .receipt-inner { padding: 28px 24px; }
+  .receipt-head { text-align: center; border-bottom: 2px dashed #ccc; padding-bottom: 16px; margin-bottom: 16px; }
+  .receipt-head h1 { font-family: 'Syne', sans-serif; font-size: 22px; color: #111; }
+  .receipt-head p { font-size: 12px; color: #555; margin-top: 4px; }
+  .receipt-meta { font-size: 12px; color: #555; margin-bottom: 16px; line-height: 1.8; }
+  .receipt-items { font-size: 13px; }
+  .receipt-item-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 5px 0;
+    border-bottom: 1px dotted #ddd;
+  }
+  .receipt-item-row .name { font-weight: 600; color: #111; flex: 1; }
+  .receipt-item-row .detail { color: #555; font-size: 12px; text-align: right; }
+  .receipt-total {
+    border-top: 2px solid #111;
+    margin-top: 12px;
+    padding-top: 12px;
+    display: flex;
+    justify-content: space-between;
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 18px;
+  }
+  .receipt-footer { text-align: center; margin-top: 20px; padding-top: 16px; border-top: 2px dashed #ccc; font-size: 12px; color: #555; }
+  .receipt-actions { display: flex; gap: 10px; padding: 0 24px 20px; }
+  .receipt-actions .btn { flex: 1; justify-content: center; padding: 13px; }
+
+  /* TOAST */
+  .toast-container {
+    position: fixed;
+    bottom: 24px; left: 50%;
+    transform: translateX(-50%);
+    z-index: 9999;
+    display: flex; flex-direction: column; gap: 8px;
+    pointer-events: none;
+  }
+  .toast {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 18px;
+    font-size: 14px;
+    color: var(--text);
+    box-shadow: var(--shadow);
+    animation: toastIn 0.25s ease;
+    display: flex; align-items: center; gap: 8px;
+  }
+  @keyframes toastIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* PRINT */
+  @media print {
+    body > *:not(.receipt-overlay) { display: none !important; }
+    .receipt-overlay { position: static !important; background: none !important; opacity: 1 !important; display: block !important; pointer-events: all !important; padding: 0 !important; }
+    .receipt-box { box-shadow: none !important; max-height: none !important; }
+    .receipt-actions { display: none !important; }
+  }
+
+  /* RESPONSIVE */
+  @media (max-width: 768px) {
+    .layout { grid-template-columns: 1fr; grid-template-rows: auto 1fr; height: auto; min-height: calc(100vh - 64px); }
+    .left-panel { height: 60vh; }
+    .right-panel { height: auto; min-height: 40vh; }
+    .menu-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
+    .header { padding: 0 16px; }
+    .logo { font-size: 18px; }
+  }
+  @media (max-width: 480px) {
+    .panel-toolbar { gap: 8px; }
+    .menu-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="logo">🍽 Ctot<span class="logo-dot"> Station</span> <span style="font-size:12px;color:var(--muted);font-weight:400;font-family:'DM Sans'">POS</span></div>
+  <div class="header-right">
+    <div class="datetime">
+      <strong id="clock-time">--:--</strong>
+      <span id="clock-date">Loading...</span>
+    </div>
+  </div>
+</header>
+
+<!-- MAIN LAYOUT -->
+<div class="layout">
+
+  <!-- LEFT: MENU -->
+  <div class="left-panel">
+    <div class="panel-toolbar">
+      <div class="search-wrap">
+        <span class="icon">🔍</span>
+        <input type="text" id="searchInput" placeholder="Search menu..." oninput="filterMenu()">
+      </div>
+      <button class="btn btn-accent" onclick="openAddMenu()">＋ Add Menu</button>
+    </div>
+    <div class="menu-grid-wrap">
+      <div class="menu-grid" id="menuGrid"></div>
+    </div>
+  </div>
+
+  <!-- RIGHT: ORDER -->
+  <div class="right-panel">
+    <div class="order-header">
+      <span class="order-title">Current Order</span>
+      <span class="badge" id="itemCountBadge">0</span>
+    </div>
+    <div class="order-items" id="orderItems">
+      <div class="order-empty">
+        <div class="big">🛒</div>
+        <p>Tap a menu item to add</p>
+      </div>
+    </div>
+    <div class="order-footer">
+      <div class="total-row">
+        <span class="total-label">GRAND TOTAL</span>
+        <span class="total-value"><small>RM </small><span id="grandTotal">0.00</span></span>
+      </div>
+      <div class="order-actions">
+        <button class="btn btn-ghost" onclick="confirmClearOrder()">🗑 Clear</button>
+        <button class="btn btn-green" onclick="openReceipt()">🖨 Print</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ADD MENU MODAL -->
+<div class="modal-overlay" id="addMenuModal">
+  <div class="modal">
+    <h2>➕ Add Menu Item</h2>
+    <label>Menu Name</label>
+    <input type="text" id="menuNameInput" placeholder="e.g. Nasi Lemak" maxlength="40">
+    <label>Price (RM)</label>
+    <input type="number" id="menuPriceInput" placeholder="e.g. 5.50" min="0.01" step="0.01">
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeAddMenu()">Cancel</button>
+      <button class="btn btn-accent" onclick="saveMenuItem()">Save Item</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM MODAL -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal">
+    <h2 id="confirmTitle">Are you sure?</h2>
+    <p class="confirm-modal" id="confirmMessage">This action cannot be undone.</p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeConfirm()">Cancel</button>
+      <button class="btn btn-red" id="confirmOkBtn" onclick="">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<!-- RECEIPT OVERLAY -->
+<div class="receipt-overlay" id="receiptOverlay">
+  <div class="receipt-box">
+    <div class="receipt-inner">
+      <div class="receipt-head">
+        <h1>🍽 Ctot Station</h1>
+        <p>Your Neighbourhood Favourite</p>
+      </div>
+      <div class="receipt-meta" id="receiptMeta"></div>
+      <div class="receipt-items" id="receiptItems"></div>
+      <div class="receipt-total">
+        <span>TOTAL</span>
+        <span id="receiptTotal">RM 0.00</span>
+      </div>
+      <div class="receipt-footer">Thank you for dining with us!<br>Please come again 😊</div>
+    </div>
+    <div class="receipt-actions">
+      <button class="btn btn-ghost" onclick="closeReceipt()" style="background:#eee;color:#333;border-color:#ccc;">✕ Close</button>
+      <button class="btn btn-accent" onclick="window.print()">🖨 Print</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST CONTAINER -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+  // ─── STATE ───────────────────────────────────────────────
+  let menuItems = JSON.parse(localStorage.getItem('familyeats_menu') || '[]');
+  let orderItems = [];
+  let confirmCallback = null;
+
+  // ─── INIT ────────────────────────────────────────────────
+  function init() {
+    updateClock();
+    setInterval(updateClock, 1000);
+    renderMenu();
+    renderOrder();
+  }
+
+  // ─── CLOCK ───────────────────────────────────────────────
+  function updateClock() {
+    const now = new Date();
+    document.getElementById('clock-time').textContent =
+      now.toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    document.getElementById('clock-date').textContent =
+      now.toLocaleDateString('en-MY', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+  }
+
+  // ─── MENU ────────────────────────────────────────────────
+  function saveMenuToStorage() {
+    localStorage.setItem('familyeats_menu', JSON.stringify(menuItems));
+  }
+
+  function renderMenu(filter = '') {
+    const grid = document.getElementById('menuGrid');
+    const filtered = menuItems.filter(m =>
+      m.name.toLowerCase().includes(filter.toLowerCase())
+    );
+    if (filtered.length === 0) {
+      grid.innerHTML = `<div class="empty-state">
+        <div class="big">${filter ? '🔍' : '🍜'}</div>
+        <p>${filter ? 'No items match "' + filter + '"' : 'No menu items yet.<br>Click <b>Add Menu</b> to get started!'}</p>
+      </div>`;
+      return;
+    }
+    grid.innerHTML = filtered.map(item => `
+      <div class="menu-card" onclick="addToOrder('${item.id}')">
+        <span class="card-name">${escHtml(item.name)}</span>
+        <span class="card-price">RM ${parseFloat(item.price).toFixed(2)} <span>each</span></span>
+        <button class="delete-btn" onclick="event.stopPropagation(); confirmDeleteMenu('${item.id}')" title="Delete">✕</button>
+      </div>
+    `).join('');
+  }
+
+  function filterMenu() {
+    renderMenu(document.getElementById('searchInput').value);
+  }
+
+  function openAddMenu() {
+    document.getElementById('menuNameInput').value = '';
+    document.getElementById('menuPriceInput').value = '';
+    document.getElementById('addMenuModal').classList.add('active');
+    setTimeout(() => document.getElementById('menuNameInput').focus(), 100);
+  }
+
+  function closeAddMenu() {
+    document.getElementById('addMenuModal').classList.remove('active');
+  }
+
+  function saveMenuItem() {
+    const name = document.getElementById('menuNameInput').value.trim();
+    const price = parseFloat(document.getElementById('menuPriceInput').value);
+    if (!name) { toast('⚠️ Please enter a menu name.'); return; }
+    if (isNaN(price) || price <= 0) { toast('⚠️ Please enter a valid price.'); return; }
+    const newItem = { id: 'item_' + Date.now(), name, price };
+    menuItems.push(newItem);
+    saveMenuToStorage();
+    renderMenu(document.getElementById('searchInput').value);
+    closeAddMenu();
+    toast('✅ "' + name + '" added to menu!');
+  }
+
+  function confirmDeleteMenu(id) {
+    const item = menuItems.find(m => m.id === id);
+    if (!item) return;
+    showConfirm(
+      '🗑 Delete Menu Item',
+      `Remove "${item.name}" from the menu? This cannot be undone.`,
+      () => deleteMenuItem(id)
+    );
+  }
+
+  function deleteMenuItem(id) {
+    const item = menuItems.find(m => m.id === id);
+    menuItems = menuItems.filter(m => m.id !== id);
+    saveMenuToStorage();
+    // Also remove from order if present
+    orderItems = orderItems.filter(o => o.menuId !== id);
+    renderMenu(document.getElementById('searchInput').value);
+    renderOrder();
+    if (item) toast('🗑 "' + item.name + '" removed.');
+  }
+
+  // ─── ORDER ───────────────────────────────────────────────
+  function addToOrder(menuId) {
+    const item = menuItems.find(m => m.id === menuId);
+    if (!item) return;
+    const existing = orderItems.find(o => o.menuId === menuId);
+    if (existing) {
+      existing.qty++;
+    } else {
+      orderItems.push({ menuId, name: item.name, price: item.price, qty: 1 });
+    }
+    renderOrder();
+    toast('🛒 Added ' + item.name);
+  }
+
+  function changeQty(menuId, delta) {
+    const entry = orderItems.find(o => o.menuId === menuId);
+    if (!entry) return;
+    entry.qty += delta;
+    if (entry.qty <= 0) {
+      orderItems = orderItems.filter(o => o.menuId !== menuId);
+    }
+    renderOrder();
+  }
+
+  function removeOrderItem(menuId) {
+    const entry = orderItems.find(o => o.menuId === menuId);
+    showConfirm(
+      '🗑 Remove Item',
+      `Remove "${entry ? entry.name : 'this item'}" from the order?`,
+      () => {
+        orderItems = orderItems.filter(o => o.menuId !== menuId);
+        renderOrder();
+        toast('Removed from order.');
+      }
+    );
+  }
+
+  function renderOrder() {
+    const container = document.getElementById('orderItems');
+    const totalItems = orderItems.reduce((s, i) => s + i.qty, 0);
+    const grandTotal = orderItems.reduce((s, i) => s + i.qty * i.price, 0);
+
+    document.getElementById('itemCountBadge').textContent = totalItems;
+    document.getElementById('grandTotal').textContent = grandTotal.toFixed(2);
+
+    if (orderItems.length === 0) {
+      container.innerHTML = `<div class="order-empty"><div class="big">🛒</div><p>Tap a menu item to add</p></div>`;
+      return;
+    }
+
+    container.innerHTML = orderItems.map(entry => {
+      const sub = (entry.qty * entry.price).toFixed(2);
+      return `
+        <div class="order-item">
+          <div class="item-top">
+            <span class="item-name">${escHtml(entry.name)}</span>
+            <span class="item-subtotal">RM ${sub}</span>
+          </div>
+          <div class="item-bottom">
+            <span class="item-price-each">RM ${parseFloat(entry.price).toFixed(2)} each</span>
+            <div style="display:flex;align-items:center;gap:8px">
+              <button class="remove-item-btn" onclick="removeOrderItem('${entry.menuId}')" title="Remove">🗑</button>
+              <div class="qty-controls">
+                <button class="qty-btn" onclick="changeQty('${entry.menuId}', -1)">−</button>
+                <div class="qty-display">${entry.qty}</div>
+                <button class="qty-btn" onclick="changeQty('${entry.menuId}', 1)">+</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function confirmClearOrder() {
+    if (orderItems.length === 0) { toast('ℹ️ Order is already empty.'); return; }
+    showConfirm('🗑 Clear Order', 'Remove all items from the current order?', () => {
+      orderItems = [];
+      renderOrder();
+      toast('🗑 Order cleared.');
+    });
+  }
+
+  // ─── RECEIPT ─────────────────────────────────────────────
+  function openReceipt() {
+    if (orderItems.length === 0) { toast('⚠️ No items in the order.'); return; }
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('en-MY', { day: '2-digit', month: 'long', year: 'numeric' });
+    const timeStr = now.toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+    document.getElementById('receiptMeta').innerHTML =
+      `<b>Date:</b> ${dateStr}<br><b>Time:</b> ${timeStr}<br><b>Items:</b> ${orderItems.reduce((s,i)=>s+i.qty,0)}`;
+
+    document.getElementById('receiptItems').innerHTML = orderItems.map(entry => `
+      <div class="receipt-item-row">
+        <span class="name">${escHtml(entry.name)}</span>
+        <span class="detail">x${entry.qty} &nbsp; RM ${(entry.qty * entry.price).toFixed(2)}</span>
+      </div>
+    `).join('');
+
+    const total = orderItems.reduce((s, i) => s + i.qty * i.price, 0);
+    document.getElementById('receiptTotal').textContent = 'RM ' + total.toFixed(2);
+    document.getElementById('receiptOverlay').classList.add('active');
+  }
+
+  function closeReceipt() {
+    document.getElementById('receiptOverlay').classList.remove('active');
+  }
+
+  // ─── CONFIRM MODAL ───────────────────────────────────────
+  function showConfirm(title, message, onConfirm) {
+    document.getElementById('confirmTitle').textContent = title;
+    document.getElementById('confirmMessage').textContent = message;
+    confirmCallback = onConfirm;
+    document.getElementById('confirmModal').classList.add('active');
+  }
+
+  function closeConfirm() {
+    document.getElementById('confirmModal').classList.remove('active');
+    confirmCallback = null;
+  }
+
+  document.getElementById('confirmOkBtn').addEventListener('click', () => {
+    if (confirmCallback) { confirmCallback(); }
+    closeConfirm();
+  });
+
+  // ─── TOAST ───────────────────────────────────────────────
+  function toast(msg, duration = 2200) {
+    const el = document.createElement('div');
+    el.className = 'toast';
+    el.textContent = msg;
+    document.getElementById('toastContainer').appendChild(el);
+    setTimeout(() => el.remove(), duration);
+  }
+
+  // ─── UTILS ───────────────────────────────────────────────
+  function escHtml(str) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  // ─── KEYBOARD ────────────────────────────────────────────
+  document.getElementById('menuNameInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') document.getElementById('menuPriceInput').focus();
+  });
+  document.getElementById('menuPriceInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') saveMenuItem();
+  });
+
+  // Close modals on overlay click
+  document.getElementById('addMenuModal').addEventListener('click', function(e) {
+    if (e.target === this) closeAddMenu();
+  });
+  document.getElementById('confirmModal').addEventListener('click', function(e) {
+    if (e.target === this) closeConfirm();
+  });
+  document.getElementById('receiptOverlay').addEventListener('click', function(e) {
+    if (e.target === this) closeReceipt();
+  });
+
+  // ─── BOOTSTRAP ───────────────────────────────────────────
+  init();
+</script>
+</body>
+</html>
